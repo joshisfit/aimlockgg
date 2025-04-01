@@ -1,0 +1,350 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+local Camera = workspace.CurrentCamera
+
+-- Aimbot Settings
+local Settings = {
+    Enabled = false,
+    TargetPart = "Head",
+    Prediction = 0.15,
+    Smoothness = 0.5,
+    TeamCheck = false
+}
+
+-- Create GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "Unnamed Lock"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game.CoreGui
+
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 280, 0, 350)
+MainFrame.Position = UDim2.new(0.5, -140, 0.5, -175)
+MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Parent = ScreenGui
+
+-- Round corners
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
+
+-- Add gradient
+local UIGradient = Instance.new("UIGradient")
+UIGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 35)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(25, 25, 30)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 20, 25))
+})
+UIGradient.Rotation = 45
+UIGradient.Parent = MainFrame
+
+-- Add border stroke
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(100, 50, 200)
+UIStroke.Thickness = 2
+UIStroke.Parent = MainFrame
+
+-- Title
+local TitleFrame = Instance.new("Frame")
+TitleFrame.Name = "TitleFrame"
+TitleFrame.Size = UDim2.new(1, 0, 0, 30)
+TitleFrame.BackgroundColor3 = Color3.fromRGB(50, 20, 90)
+TitleFrame.BorderSizePixel = 0
+TitleFrame.Parent = MainFrame
+
+-- Round title corners
+local TitleUICorner = Instance.new("UICorner")
+TitleUICorner.CornerRadius = UDim.new(0, 10)
+TitleUICorner.Parent = TitleFrame
+
+-- Add title gradient
+local TitleUIGradient = Instance.new("UIGradient")
+TitleUIGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 30, 140)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 20, 90))
+})
+TitleUIGradient.Rotation = 45
+TitleUIGradient.Parent = TitleFrame
+
+-- Title label
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Name = "TitleLabel"
+TitleLabel.Size = UDim2.new(1, 0, 1, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Unnamed Lock"
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextSize = 18
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.Parent = TitleFrame
+
+-- Create humanoid visualization
+local HumanoidFrame = Instance.new("Frame")
+HumanoidFrame.Name = "HumanoidFrame"
+HumanoidFrame.Size = UDim2.new(0, 140, 0, 200)
+HumanoidFrame.Position = UDim2.new(0.5, -70, 0, 60)
+HumanoidFrame.BackgroundTransparency = 1
+HumanoidFrame.Parent = MainFrame
+
+-- Create parts
+local parts = {
+    Head = {pos = UDim2.new(0.5, -25, 0, 0), size = UDim2.new(0, 50, 0, 50)},
+    Torso = {pos = UDim2.new(0.5, -35, 0, 55), size = UDim2.new(0, 70, 0, 70)},
+    LeftArm = {pos = UDim2.new(0, 0, 0, 55), size = UDim2.new(0, 30, 0, 70)},
+    RightArm = {pos = UDim2.new(1, -30, 0, 55), size = UDim2.new(0, 30, 0, 70)},
+    LeftLeg = {pos = UDim2.new(0.5, -35, 0, 130), size = UDim2.new(0, 30, 0, 70)},
+    RightLeg = {pos = UDim2.new(0.5, 5, 0, 130), size = UDim2.new(0, 30, 0, 70)}
+}
+
+for partName, partInfo in pairs(parts) do
+    local partButton = Instance.new("Frame")
+    partButton.Name = partName
+    partButton.Position = partInfo.pos
+    partButton.Size = partInfo.size
+    partButton.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+    partButton.Parent = HumanoidFrame
+    
+    -- Add stroke
+    local partStroke = Instance.new("UIStroke")
+    partStroke.Color = Color3.fromRGB(100, 50, 200)
+    partStroke.Thickness = 1
+    partStroke.Parent = partButton
+    
+    -- Add corner
+    local partCorner = Instance.new("UICorner")
+    partCorner.CornerRadius = UDim.new(0, 8)
+    partCorner.Parent = partButton
+    
+    -- Add click functionality
+    partButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            -- Visual feedback
+            local originalColor = partButton.BackgroundColor3
+            TweenService:Create(partButton, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(120, 60, 220)}):Play()
+            
+            -- Set target part
+            Settings.TargetPart = partName
+            
+            -- Reset other buttons
+            for otherPart, _ in pairs(parts) do
+                if otherPart ~= partName then
+                    local otherButton = HumanoidFrame:FindFirstChild(otherPart)
+                    if otherButton then
+                        TweenService:Create(otherButton, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(50, 50, 55)}):Play()
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- Add sliders for prediction and smoothness
+local function createSlider(name, defaultValue, yPos)
+    local sliderFrame = Instance.new("Frame")
+    sliderFrame.Name = name.."Slider"
+    sliderFrame.Size = UDim2.new(0.8, 0, 0, 30)
+    sliderFrame.Position = UDim2.new(0.1, 0, 0, yPos)
+    sliderFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+    sliderFrame.Parent = MainFrame
+    
+    -- Add corner
+    local sliderCorner = Instance.new("UICorner")
+    sliderCorner.CornerRadius = UDim.new(0, 8)
+    sliderCorner.Parent = sliderFrame
+    
+    -- Add stroke
+    local sliderStroke = Instance.new("UIStroke")
+    sliderStroke.Color = Color3.fromRGB(100, 50, 200)
+    sliderStroke.Thickness = 1
+    sliderStroke.Parent = sliderFrame
+    
+    -- Slider bar
+    local sliderBar = Instance.new("Frame")
+    sliderBar.Name = "Bar"
+    sliderBar.Size = UDim2.new(0.95, 0, 0.3, 0)
+    sliderBar.Position = UDim2.new(0.025, 0, 0.5, -5)
+    sliderBar.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+    sliderBar.BorderSizePixel = 0
+    sliderBar.Parent = sliderFrame
+    
+    -- Slider bar corner
+    local barCorner = Instance.new("UICorner")
+    barCorner.CornerRadius = UDim.new(0, 4)
+    barCorner.Parent = sliderBar
+    
+    -- Slider knob
+    local sliderKnob = Instance.new("Frame")
+    sliderKnob.Name = "Knob"
+    sliderKnob.Size = UDim2.new(0, 20, 0, 20)
+    sliderKnob.Position = UDim2.new(defaultValue, -10, 0.5, -10)
+    sliderKnob.BackgroundColor3 = Color3.fromRGB(120, 60, 220)
+    sliderKnob.BorderSizePixel = 0
+    sliderKnob.Parent = sliderFrame
+    
+    -- Knob corner
+    local knobCorner = Instance.new("UICorner")
+    knobCorner.CornerRadius = UDim.new(0, 10)
+    knobCorner.Parent = sliderKnob
+    
+    -- Value display
+    local valueLabel = Instance.new("TextLabel")
+    valueLabel.Name = "ValueLabel"
+    valueLabel.Size = UDim2.new(0, 50, 0, 20)
+    valueLabel.Position = UDim2.new(0.5, -25, 0, -25)
+    valueLabel.BackgroundTransparency = 1
+    valueLabel.Text = name..": "..tostring(defaultValue)
+    valueLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    valueLabel.TextSize = 14
+    valueLabel.Font = Enum.Font.GothamSemibold
+    valueLabel.Parent = sliderFrame
+    
+    -- Slider functionality
+    local dragging = false
+    
+    sliderKnob.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local mousePosX = input.Position.X
+            local sliderPosX = sliderFrame.AbsolutePosition.X
+            local sliderWidth = sliderFrame.AbsoluteSize.X
+            
+            local relativeX = math.clamp((mousePosX - sliderPosX) / sliderWidth, 0, 1)
+            sliderKnob.Position = UDim2.new(relativeX, -10, 0.5, -10)
+            
+            -- Update settings
+            local value = relativeX
+            if name == "Prediction" then
+                value = relativeX * 0.5 -- Scale to 0-0.5
+                Settings.Prediction = value
+            elseif name == "Smoothness" then
+                value = relativeX * 0.95 + 0.05 -- Scale to 0.05-1
+                Settings.Smoothness = value
+            end
+            
+            valueLabel.Text = name..": "..string.format("%.2f", value)
+        end
+    end)
+    
+    return sliderFrame
+end
+
+createSlider("Prediction", 0.3, 280) -- 0.3 * 0.5 = 0.15 default
+createSlider("Smoothness", 0.5, 330) -- 0.5 * 0.95 + 0.05 = 0.525 default
+
+-- Make GUI draggable
+local dragging = false
+local dragStart
+local startPos
+
+TitleFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        local targetPosition = UDim2.new(
+            startPos.X.Scale, 
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale, 
+            startPos.Y.Offset + delta.Y
+        )
+        
+        -- Add smooth dragging effect
+        local tweenInfo = TweenInfo.new(0.07, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+        TweenService:Create(MainFrame, tweenInfo, {Position = targetPosition}):Play()
+    end
+end)
+
+-- Aimbot functionality
+local Target = nil
+local Locked = false
+
+local function GetClosestPlayer()
+    local MaxDistance = math.huge
+    local Target = nil
+    
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer then
+            if Settings.TeamCheck == false or v.Team ~= LocalPlayer.Team then
+                if v.Character and v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid.Health > 0 and v.Character:FindFirstChild(Settings.TargetPart) then
+                    local ScreenPoint = Camera:WorldToScreenPoint(v.Character[Settings.TargetPart].Position)
+                    local VectorDistance = (Vector2.new(ScreenPoint.X, ScreenPoint.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
+                    
+                    if VectorDistance < MaxDistance then
+                        Target = v
+                        MaxDistance = VectorDistance
+                    end
+                end
+            end
+        end
+    end
+    
+    return Target
+end
+
+-- Toggle aimbot with T key
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.T then
+        if not Locked then
+            Locked = true
+            Target = GetClosestPlayer()
+            -- Visual feedback
+            if Target then
+                MainFrame.UIStroke.Color = Color3.fromRGB(0, 255, 100)
+            else
+                MainFrame.UIStroke.Color = Color3.fromRGB(255, 50, 50)
+            end
+        else
+            Locked = false
+            Target = nil
+            MainFrame.UIStroke.Color = Color3.fromRGB(100, 50, 200)
+        end
+    end
+end)
+
+-- Aimbot update loop
+RunService.RenderStepped:Connect(function()
+    if Locked and Target and Target.Character and Target.Character:FindFirstChild(Settings.TargetPart) and Target.Character:FindFirstChild("Humanoid") and Target.Character.Humanoid.Health > 0 then
+        local targetPos = Target.Character[Settings.TargetPart].Position
+        
+        -- Apply prediction
+        local targetVel = Target.Character[Settings.TargetPart].Velocity
+        local predictionOffset = targetVel * Settings.Prediction
+        targetPos = targetPos + predictionOffset
+        
+        -- Calculate camera rotation
+        local targetCFrame = CFrame.lookAt(Camera.CFrame.Position, targetPos)
+        
+        -- Apply smoothness
+        Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, Settings.Smoothness)
+    end
+end)
